@@ -157,7 +157,7 @@ class CloudBackupManager(
 
             val timeFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
             val fileTime = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val backupFileName = "FotoTrezor_Zaloha_$fileTime.vaultbackup"
+            val backupFileName = "PhotoLock_Zaloha_$fileTime.vaultbackup"
             val backupDest = File(repository.getBackupsDir(), backupFileName)
             FileOutputStream(backupDest).use { it.write(finalEncryptedArchive) }
 
@@ -345,17 +345,39 @@ class CloudBackupManager(
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/octet-stream"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
-                putExtra(Intent.EXTRA_SUBJECT, "Záloha Foto Trezoru")
-                putExtra(Intent.EXTRA_TEXT, "Zašifrovaná záloha Foto Trezoru (AES-256).")
+                putExtra(Intent.EXTRA_SUBJECT, "Záloha PhotoLock")
+                putExtra(Intent.EXTRA_TEXT, "Zašifrovaná záloha PhotoLock (AES-256).")
+                clipData = android.content.ClipData.newRawUri("Záloha PhotoLock", contentUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            val chooser = Intent.createChooser(shareIntent, "Uložit nebo exportovat zálohu na...").apply {
+            val chooser = Intent.createChooser(shareIntent, "Uložit nebo sdílet zálohu...").apply {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(chooser)
         } catch (e: Exception) {
             e.printStackTrace()
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                android.widget.Toast.makeText(context, "Chyba při sdílení: ${e.localizedMessage}", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    /**
+     * Copies the backup file directly to a user-chosen location (SAF Document URI)
+     */
+    suspend fun exportBackupToUri(file: File, destinationUri: Uri): Boolean = withContext(Dispatchers.IO) {
+        try {
+            context.contentResolver.openOutputStream(destinationUri)?.use { outputStream ->
+                file.inputStream().use { inputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            } ?: false
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 }

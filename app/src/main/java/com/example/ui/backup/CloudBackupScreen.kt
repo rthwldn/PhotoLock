@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VerifiedUser
@@ -99,6 +100,28 @@ fun CloudBackupScreen(
     var showConfirmRestoreDialog by remember { mutableStateOf(false) }
     var selectedImportUri by remember { mutableStateOf<Uri?>(null) }
     var showConfirmUriRestoreDialog by remember { mutableStateOf(false) }
+
+    // File pending export to user-selected folder/storage location
+    var pendingFileToExport by remember { mutableStateOf<File?>(null) }
+
+    // Launcher for saving backup directly to any user-selected folder via Android Document Tree / File Provider
+    val saveDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { destinationUri: Uri? ->
+        val file = pendingFileToExport
+        if (destinationUri != null && file != null) {
+            viewModel.exportBackupToUri(file, destinationUri) { success ->
+                if (success) {
+                    Toast.makeText(context, "Záloha úspěšně uložena do vybrané složky!", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "Chyba při ukládání zálohy", Toast.LENGTH_SHORT).show()
+                }
+                pendingFileToExport = null
+            }
+        } else {
+            pendingFileToExport = null
+        }
+    }
 
     // Launcher for selecting a backup file from Google Drive, Downloads, or Local Files
     val importFilePickerLauncher = rememberLauncherForActivityResult(
@@ -256,9 +279,32 @@ fun CloudBackupScreen(
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(Icons.Default.FileUpload, contentDescription = null, tint = ActionButtonText, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Share, contentDescription = null, tint = ActionButtonText, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Vytvořit a exportovat zálohu", color = ActionButtonText, fontWeight = FontWeight.Bold)
+                            Text("Vytvořit a sdílet zálohu", color = ActionButtonText, fontWeight = FontWeight.Bold)
+                        }
+
+                        // Save Directly to User-Chosen Folder Button
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.createEncryptedCloudBackup { createdFile ->
+                                    pendingFileToExport = createdFile
+                                    saveDocumentLauncher.launch(createdFile.name)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                                .testTag("save_backup_to_folder_button"),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x66FFFFFF)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.SaveAlt, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Uložit do zařízení / vybrat složku", color = Color.White, fontWeight = FontWeight.Bold)
                         }
 
                         // Import Backup Button
@@ -319,6 +365,17 @@ fun CloudBackupScreen(
                                 val file = File(snapshot.localFilePath)
                                 if (file.exists()) {
                                     viewModel.shareBackup(file)
+                                } else {
+                                    Toast.makeText(context, "Soubor zálohy nenalezen", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        onSaveToDevice = {
+                            if (snapshot.localFilePath != null) {
+                                val file = File(snapshot.localFilePath)
+                                if (file.exists()) {
+                                    pendingFileToExport = file
+                                    saveDocumentLauncher.launch(file.name)
                                 } else {
                                     Toast.makeText(context, "Soubor zálohy nenalezen", Toast.LENGTH_SHORT).show()
                                 }
@@ -498,6 +555,7 @@ fun CloudBackupScreen(
 fun BackupSnapshotCard(
     snapshot: CloudBackupSnapshotEntity,
     onShare: () -> Unit,
+    onSaveToDevice: () -> Unit,
     onRestore: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -577,9 +635,13 @@ fun BackupSnapshotCard(
                 IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                     Icon(Icons.Default.Delete, contentDescription = "Smazat", tint = RedDanger, modifier = Modifier.size(18.dp))
                 }
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(2.dp))
+                IconButton(onClick = onSaveToDevice, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.SaveAlt, contentDescription = "Uložit do složky zařízení", tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.width(2.dp))
                 IconButton(onClick = onShare, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.Share, contentDescription = "Sdílet / Exportovat na Drive", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Share, contentDescription = "Sdílet přes systémové menu", tint = Color.White, modifier = Modifier.size(18.dp))
                 }
                 Spacer(modifier = Modifier.width(6.dp))
                 OutlinedButton(

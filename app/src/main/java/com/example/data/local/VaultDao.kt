@@ -69,6 +69,9 @@ interface VaultDao {
     @Query("SELECT * FROM encrypted_photos WHERE isTrash = 1 ORDER BY trashTimestamp DESC")
     fun getTrashPhotos(): Flow<List<EncryptedPhotoEntity>>
 
+    @Query("SELECT * FROM encrypted_photos WHERE isTrash = 1")
+    suspend fun getTrashPhotosList(): List<EncryptedPhotoEntity>
+
     @Query("SELECT * FROM encrypted_photos WHERE id = :id LIMIT 1")
     fun getPhotoByIdFlow(id: String): Flow<EncryptedPhotoEntity?>
 

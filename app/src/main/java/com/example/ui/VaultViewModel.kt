@@ -494,6 +494,13 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         backupManager.shareBackupFile(file)
     }
 
+    fun exportBackupToUri(file: File, destinationUri: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = backupManager.exportBackupToUri(file, destinationUri)
+            onResult(success)
+        }
+    }
+
     fun resetBackupProgress() {
         _backupProgress.value = CloudBackupManager.BackupProgress.Idle
     }

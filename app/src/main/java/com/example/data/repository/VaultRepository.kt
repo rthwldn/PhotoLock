@@ -269,21 +269,23 @@ class VaultRepository(
 
     suspend fun permanentlyDeleteMultiple(photoIds: List<String>) = withContext(Dispatchers.IO) {
         for (id in photoIds) {
-            permanentlyDeletePhoto(id)
+            val photo = dao.getPhotoById(id)
+            if (photo != null) {
+                File(photosDir, photo.encryptedFileName).delete()
+                File(thumbsDir, photo.encryptedThumbFileName).delete()
+                thumbMemoryCache.remove(id)
+            }
         }
+        dao.permanentlyDeletePhotos(photoIds)
     }
 
     suspend fun emptyTrash() = withContext(Dispatchers.IO) {
-        val trashed = dao.getTrashPhotos()
-        // get single snapshot
-        val photos = dao.getAllActivePhotosList() // or query trashed
-        // Trashed items
-        val allTrashed = mutableListOf<EncryptedPhotoEntity>()
-        // Let's delete files for trashed
-        val allPhotos = dao.getAllActivePhotosList()
-        // Query directly
-        val query = dao.getTrashPhotos()
-        // Room emptyTrash:
+        val trashed = dao.getTrashPhotosList()
+        for (photo in trashed) {
+            File(photosDir, photo.encryptedFileName).delete()
+            File(thumbsDir, photo.encryptedThumbFileName).delete()
+            thumbMemoryCache.remove(photo.id)
+        }
         dao.emptyTrash()
     }
 
@@ -299,7 +301,7 @@ class VaultRepository(
                 put(MediaStore.MediaColumns.DISPLAY_NAME, "Export_${photo.originalFileName}")
                 put(MediaStore.MediaColumns.MIME_TYPE, photo.mimeType)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/FotoTrezor")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/PhotoLock")
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
             }
