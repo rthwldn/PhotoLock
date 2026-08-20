@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">PhotoLock</string>
+    <string name="unlock_vault">Odemknout trezor</string>
+    <string name="enter_pin">Zadejte svůj PIN kód</string>
+    <string name="setup_pin">Vytvořte bezpečnostní PIN</string>
+    <string name="confirm_pin">Potvrďte svůj PIN</string>
+    <string name="pin_mismatch">PIN kódy se neshodují</string>
+    <string name="biometric_prompt_title">Odemknutí PhotoLock</string>
+    <string name="biometric_prompt_subtitle">Ověřte svou identitu otiskem prstu nebo obličejem</string>
+    <string name="use_pin">Použít PIN kód</string>
+    <string name="albums">Alba</string>
+    <string name="sub_albums">Pod-alba</string>
+    <string name="all_photos">Všechny fotky</string>
+    <string name="favorites">Oblíbené</string>
+    <string name="trash">Koš</string>
+    <string name="import_photos">Importovat fotky</string>
+    <string name="backup_cloud">Cloudová záloha</string>
+    <string name="settings">Nastavení</string>
+</resources>

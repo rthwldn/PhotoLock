@@ -1,0 +1,6 @@
+{
+  "name": "PhotoLock",
+  "description": "Privátní šifrované foto album s podporou biometrie, PIN kódu, hierarchie alb a exportovatelných záloh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
